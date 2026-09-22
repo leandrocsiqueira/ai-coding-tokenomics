@@ -1,0 +1,11 @@
+model,text,characters,tokens,characters_per_token
+Qwen/Qwen2.5-0.5B-Instruct,"Olá, meu nome é Leandro.",24,9,2.6666666666666665
+Qwen/Qwen2.5-0.5B-Instruct,tokenização,11,2,5.5
+Qwen/Qwen2.5-0.5B-Instruct,João Paulo Peçanha Navarro,26,9,2.888888888888889
+Qwen/Qwen2.5-0.5B-Instruct,"def calculate_total_cost(input_tokens, output_tokens):",54,10,5.4
+Qwen/Qwen2.5-0.5B-Instruct,🚀 Inteligência Artificial!,26,6,4.333333333333333
+HuggingFaceTB/SmolLM2-360M-Instruct,"Olá, meu nome é Leandro.",24,11,2.1818181818181817
+HuggingFaceTB/SmolLM2-360M-Instruct,tokenização,11,3,3.6666666666666665
+HuggingFaceTB/SmolLM2-360M-Instruct,João Paulo Peçanha Navarro,26,9,2.888888888888889
+HuggingFaceTB/SmolLM2-360M-Instruct,"def calculate_total_cost(input_tokens, output_tokens):",54,15,3.6
+HuggingFaceTB/SmolLM2-360M-Instruct,🚀 Inteligência Artificial!,26,10,2.6

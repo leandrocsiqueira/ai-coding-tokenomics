@@ -22,3 +22,15 @@ Portuguese words can be split into multiple tokens. "tokenização" was split in
 The code sample was tokenized around meaningful code fragments such as "def", "calculate", "_total", "_cost", "_tokens", punctuation, and identifiers. The 54-character code sample resulted in 10 tokens.
 
 The rocket emoji was represented by its own encoded token representation. Although the token representation was not human-readable in the terminal, decoding reconstructed the original emoji correctly. The complete text "🚀 Inteligência Artificial!" used 6 tokens.
+
+## Tokenizer comparison findings
+
+The same text does not necessarily use the same number of tokens with different tokenizers. For example, "Olá, meu nome é Leandro." required 9 tokens with Qwen and 11 with SmolLM2. The code sample required 10 tokens with Qwen and 15 with SmolLM2.
+
+Across the five test texts, Qwen generated 36 tokens in total, while SmolLM2 generated 48.
+
+The largest difference occurred in the code sample, where Qwen generated 10 tokens and SmolLM2 generated 15.
+
+An interesting result was "João Paulo Peçanha Navarro", which required exactly 9 tokens with both tokenizers, even though the other texts produced different token counts.
+
+Tokenization can affect cost because processing more tokens may require more computation and, in token-priced services, can increase usage. However, token count alone is not enough to compare the final cost of different models because pricing per token may also differ.

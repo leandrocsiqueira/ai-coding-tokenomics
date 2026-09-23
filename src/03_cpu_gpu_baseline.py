@@ -13,7 +13,15 @@ MAX_NEW_TOKENS = 50
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
 
 
+def reset_cuda_memory():
+    torch.cuda.empty_cache()
+    torch.cuda.reset_peak_memory_stats()
+
+
 def run_inference(device, dtype):
+    if device == "cuda":
+        reset_cuda_memory()
+
     print(f"\nLoading model on {device} with {dtype}...")
 
     model = AutoModelForCausalLM.from_pretrained(
@@ -39,11 +47,13 @@ def run_inference(device, dtype):
     print("Running warm-up...")
 
     with torch.inference_mode():
-        _ = model.generate(
+        warmup_ids = model.generate(
             **inputs,
             do_sample=False,
             max_new_tokens=5,
         )
+
+    del warmup_ids
 
     if device == "cuda":
         torch.cuda.synchronize()
@@ -70,12 +80,26 @@ def run_inference(device, dtype):
     process = psutil.Process()
     ram_rss_mb = process.memory_info().rss / (1024 ** 2)
 
+    vram_peak_allocated_mb = 0.0
+    vram_reserved_mb = 0.0
+
+    if device == "cuda":
+        vram_peak_allocated_mb = (
+            torch.cuda.max_memory_allocated() / (1024 ** 2)
+        )
+        vram_reserved_mb = (
+            torch.cuda.memory_reserved() / (1024 ** 2)
+        )
+
     decoded_text = tokenizer.decode(
         generated_ids[0],
         skip_special_tokens=True,
     )
 
-    print(f"\n{device.upper()} / {str(dtype).replace('torch.', '').upper()} results")
+    print(
+        f"\n{device.upper()} / "
+        f"{str(dtype).replace('torch.', '').upper()} results"
+    )
     print(f"Model: {MODEL_NAME}")
     print(f"Device: {device}")
     print(f"Dtype: {str(dtype).replace('torch.', '')}")
@@ -84,7 +108,16 @@ def run_inference(device, dtype):
     print(f"Elapsed seconds: {elapsed_seconds:.4f}")
     print(f"Tokens per second: {tokens_per_second:.2f}")
     print(f"RAM RSS MB: {ram_rss_mb:.2f}")
+    print(f"VRAM peak allocated MB: {vram_peak_allocated_mb:.2f}")
+    print(f"VRAM reserved MB: {vram_reserved_mb:.2f}")
     print(f"\nGenerated text:\n{decoded_text}")
+
+    del generated_ids
+    del inputs
+    del model
+
+    if device == "cuda":
+        torch.cuda.empty_cache()
 
 
 run_inference("cpu", torch.float32)

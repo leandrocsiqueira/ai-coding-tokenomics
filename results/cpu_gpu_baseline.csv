@@ -1,0 +1,4 @@
+model,device,dtype,gpu_name,input_tokens,output_tokens,elapsed_seconds,tokens_per_second,ram_rss_mb,vram_peak_allocated_mb,vram_reserved_mb
+Qwen/Qwen2.5-0.5B-Instruct,cpu,float32,,13,50,2.5596887519996017,19.533624922538152,2769.5703125,0.0,0.0
+Qwen/Qwen2.5-0.5B-Instruct,cuda,float32,NVIDIA RTX A3000 12GB Laptop GPU,13,50,1.0723364579998815,46.627156641918,2935.234375,1897.177734375,2024.0
+Qwen/Qwen2.5-0.5B-Instruct,cuda,float16,NVIDIA RTX A3000 12GB Laptop GPU,13,50,1.0865890630002468,46.01555611276076,3228.69140625,961.2421875,1014.0

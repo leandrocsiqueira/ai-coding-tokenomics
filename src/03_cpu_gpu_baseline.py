@@ -124,5 +124,6 @@ run_inference("cpu", torch.float32)
 
 if torch.cuda.is_available():
     run_inference("cuda", torch.float32)
+    run_inference("cuda", torch.float16)
 else:
     print("\nCUDA is not available.")

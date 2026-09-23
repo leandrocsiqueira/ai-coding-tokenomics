@@ -34,3 +34,17 @@ The largest difference occurred in the code sample, where Qwen generated 10 toke
 An interesting result was "João Paulo Peçanha Navarro", which required exactly 9 tokens with both tokenizers, even though the other texts produced different token counts.
 
 Tokenization can affect cost because processing more tokens may require more computation and, in token-priced services, can increase usage. However, token count alone is not enough to compare the final cost of different models because pricing per token may also differ.
+
+## CPU vs GPU
+
+The model fit entirely on the NVIDIA RTX A3000 12GB Laptop GPU.
+
+CPU/FP32 generated 50 tokens in 2.56 seconds, reaching approximately 19.53 tokens per second. GPU/FP32 generated the same 50 tokens in 1.07 seconds, reaching approximately 46.63 tokens per second. In this run, GPU/FP32 was about 2.39 times faster than CPU/FP32.
+
+GPU/FP16 generated 50 tokens in 1.09 seconds, reaching approximately 46.02 tokens per second. In this short benchmark, FP16 did not provide a meaningful throughput improvement over FP32.
+
+The main difference between GPU/FP32 and GPU/FP16 was memory usage. Peak allocated VRAM decreased from approximately 1897 MB in FP32 to 961 MB in FP16, a reduction of about 49%.
+
+The model was confirmed to be running on CUDA by checking `next(model.parameters()).device`, which reported `cuda:0`.
+
+If the model did not fit in GPU memory, I would investigate a smaller model, FP16 or BF16, quantization, or CPU/GPU offload.

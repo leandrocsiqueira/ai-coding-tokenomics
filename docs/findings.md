@@ -1,28 +1,27 @@
 ## Environment
+- **Operating system:** `Ubuntu 24.04.5 LTS`
+- **Python:** `3.12.3`
+- **PyTorch:** `2.14.0+cu132`
+- **Transformers:** `5.17.0`
+- **CUDA available in PyTorch:** `True`
+- **GPU:** `NVIDIA RTX A3000 12GB Laptop GPU`
+- **Total VRAM:** `11.63 GB`
+- **NVIDIA driver:** `595.91.07`
+- **CUDA (as reported by `nvidia-smi`):** `13.2`
+- **PyTorch CUDA build**: `13.2`
+---
 
-- Operating system: Ubuntu 24.04.5 LTS
-- Python: 3.12.3
-- PyTorch: 2.14.0+cu132
-- Transformers: 5.17.0
-- CUDA available in PyTorch: True
-- GPU: NVIDIA RTX A3000 12GB Laptop GPU
-- Total VRAM: 11.63 GB
-- NVIDIA driver: 595.91.07
-- CUDA reported by nvidia-smi: 13.2
-- PyTorch CUDA build: 13.2
+## Tokenization Findings
 
-## Tokenization findings
+- **Density:** The relationship between character count and token count varied significantly across the tested inputs. For example, `Olá, meu nome é Leandro.` contained 24 characters and produced 9 tokens (2.67 chars/token), while `🚀 Inteligência Artificial!` had two more characters but produced only 6 tokens (4.33 chars/token). This shows that character count alone doesn't determine token count, as different text patterns can result in substantially different tokenization densities.
 
-A token does not always correspond to a complete word. For example, "tokenização" was represented by 2 tokens, while "João Paulo Peçanha Navarro" required 9 tokens.
+- **Token representation vs decoded text:** The experiment highlighted the difference between a tokenizer's internal token representation and the final decoded text. For example, token strings associated with accented text appeared in forms like `Ã¡`, `Ã£o`, and `Ãªncia`. Even so, `decode()` correctly reconstructed the original text. This shows that the output of `convert_ids_to_tokens()` should not necessarily be interpreted as human-readable text. `convert_ids_to_tokens()` is useful for inspecting the tokenizer's internal token pieces, while `decode()` should be used when reconstructing text from token IDs.
 
-Spaces, punctuation, and accented characters affected tokenization. In "Olá, meu nome é Leandro.", punctuation and Portuguese characters appeared as separate or encoded token fragments, resulting in 9 tokens for 24 characters.
+- **Python code tokenization:** The Python code sample was tokenized relatively compactly. The 54-character expression resulted in just 10 tokens, including `def`, `Ġcalculate`, `_total`, `_cost`, `_tokens`, and `):`. This suggests that the tokenizer's vocabulary contains representations for several common code fragments and identifier substrings, allowing this particular code sample to be represented with relatively few tokens.
 
-Portuguese words can be split into multiple tokens. "tokenização" was split into 2 tokens, and "Inteligência" was represented by multiple token fragments.
+- **Implications for token-based cost:** Texts with similar character counts can still result in different numbers of tokens, which can affect the cost of APIs that charge based on token usage. However, this experiment doesn't show that Portuguese is necessarily more expensive to process than English or code. To make a fair comparison, you'd need equivalent texts in each language, along with the pricing rules of the specific service being evaluated.
 
-The code sample was tokenized around meaningful code fragments such as "def", "calculate", "_total", "_cost", "_tokens", punctuation, and identifiers. The 54-character code sample resulted in 10 tokens.
-
-The rocket emoji was represented by its own encoded token representation. Although the token representation was not human-readable in the terminal, decoding reconstructed the original emoji correctly. The complete text "🚀 Inteligência Artificial!" used 6 tokens.
-
+---
 ## Tokenizer comparison findings
 
 The same text does not necessarily use the same number of tokens with different tokenizers. For example, "Olá, meu nome é Leandro." required 9 tokens with Qwen and 11 with SmolLM2. The code sample required 10 tokens with Qwen and 15 with SmolLM2.

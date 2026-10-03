@@ -22,17 +22,19 @@
 - **Implications for token-based cost:** Texts with similar character counts can still result in different numbers of tokens, which can affect the cost of APIs that charge based on token usage. However, this experiment doesn't show that Portuguese is necessarily more expensive to process than English or code. To make a fair comparison, you'd need equivalent texts in each language, along with the pricing rules of the specific service being evaluated.
 
 ---
-## Tokenizer comparison findings
+## Tokenization Comparison Findings
 
-The same text does not necessarily use the same number of tokens with different tokenizers. For example, "Olá, meu nome é Leandro." required 9 tokens with Qwen and 11 with SmolLM2. The code sample required 10 tokens with Qwen and 15 with SmolLM2.
+**Different tokenizers, different token counts:** Different tokenizers can produce different token counts for the exact same text. For example, `Olá, meu nome é Leandro.` was split into 9 tokens by Qwen and 11 by SmolLM2, while `tokenização` was split into 2 and 3 tokens, respectively. This shows that tokenization depends on the model: there's no universal token count for a given piece of text.
 
-Across the five test texts, Qwen generated 36 tokens in total, while SmolLM2 generated 48.
+**Overall tokenization density:** Across the five test inputs, Qwen generated 36 tokens in total, compared with 48 for SmolLM2. For this particular sample, SmolLM2 therefore used about 33% more tokens than Qwen. This doesn't mean Qwen is always more token-efficient, but it does show that its tokenizer represented these specific inputs more compactly.
 
-The largest difference occurred in the code sample, where Qwen generated 10 tokens and SmolLM2 generated 15.
+**Code tokenization:** The Python code sample showed one of the largest absolute differences between the two tokenizers. The 54-character input took 10 tokens with Qwen and 15 with SmolLM2. That works out to 5.40 characters per token for Qwen versus 3.60 for SmolLM2, meaning Qwen represented this particular code sample using fewer token pieces.
 
-An interesting result was "João Paulo Peçanha Navarro", which required exactly 9 tokens with both tokenizers, even though the other texts produced different token counts.
+**Special characters and accented text:** The input `🚀 Inteligência Artificial!` produced 6 tokens with Qwen and 10 with SmolLM2, the largest relative difference in the experiment. SmolLM2 used about 67% more tokens for this input. This suggests that differences in tokenizer vocabulary and segmentation can become especially noticeable when accented text and special characters appear together, although more examples would be needed to determine exactly which parts of the input caused the difference.
 
-Tokenization can affect cost because processing more tokens may require more computation and, in token-priced services, can increase usage. However, token count alone is not enough to compare the final cost of different models because pricing per token may also differ.
+**Equal token counts don't necessarily mean equal tokenization:** `João Paulo Peçanha Navarro` produced exactly 9 tokens with both tokenizers. However, matching token counts don't necessarily mean the text was split at the same positions or into the same token pieces. We'd need to inspect the actual token representations before concluding that the two tokenizers handled this input in the same way.
+
+**Implications for token-based cost:** Different tokenizers can represent the same input using different numbers of tokens, which can affect computational workload and token-based API usage. Still, fewer tokens don't automatically mean a model or service is cheaper. The final cost also depends on factors such as the provider's input and output token pricing, the model architecture, and the underlying inference infrastructure.
 
 ## CPU vs GPU
 

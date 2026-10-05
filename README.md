@@ -14,11 +14,21 @@ PyTorch was installed separately using the official installation selector for th
 
 ## How to run
 
-Activate the virtual environment:
+Create and activate a virtual environment:
 
 ```bash
+python3 -m venv .venv
 source .venv/bin/activate
 ```
+
+Install the project dependencies:
+
+```bash
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+PyTorch must be installed separately using the official PyTorch installation selector for the appropriate CUDA environment.
 
 Run the environment validation:
 
@@ -68,11 +78,13 @@ results/nvidia-smi.txt
 
 Qwen and SmolLM2 produced different token counts for the same inputs. Across the five test texts, Qwen generated 36 tokens while SmolLM2 generated 48.
 
-In the local inference benchmark, CPU/FP32 reached approximately 19.53 tokens per second, while GPU/FP32 reached approximately 46.63 tokens per second.
+In the current local inference baseline, CPU/FP32 reached approximately 17.91 tokens per second, while GPU/FP32 reached approximately 28.20 tokens per second.
 
-GPU/FP16 reached approximately 46.02 tokens per second. Its throughput was similar to GPU/FP32 in this short run, while peak allocated VRAM decreased from approximately 1897 MB to 961 MB.
+GPU/FP16 reached approximately 27.19 tokens per second. Its throughput was similar to GPU/FP32 in this run, while peak allocated VRAM decreased from approximately 1897 MB to 961 MB.
 
-Detailed observations are documented in `docs/findings.md`.
+These measurements represent a single baseline run under the current experimental conditions. They should not be interpreted as definitive performance benchmarks.
+
+Detailed observations and limitations are documented in `docs/findings.md`.
 
 ## Roadmap
 

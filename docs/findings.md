@@ -36,16 +36,24 @@
 
 **Implications for token-based cost:** Different tokenizers can represent the same input using different numbers of tokens, which can affect computational workload and token-based API usage. Still, fewer tokens don't automatically mean a model or service is cheaper. The final cost also depends on factors such as the provider's input and output token pricing, the model architecture, and the underlying inference infrastructure.
 
-## CPU vs GPU
+## CPU/GPU Inference Findings
 
-The model fit entirely on the NVIDIA RTX A3000 12GB Laptop GPU.
+**GPU provided a real but moderate speedup:** CUDA FP32 reached 28.20 tokens/s, compared with 17.91 tokens/s on CPU FP32, which corresponds to a speedup of about 1.57x. Total generation time dropped from 2.7921 seconds to 1.7730 seconds, a reduction of about 36.5%. This's a meaningful improvement, but not a dramatic one. With a 0.5B-parameter model, batch size 1, and autoregressive generation, the GPU's likely running below full utilization, so execution overhead and memory access costs make up a relatively large share of the total runtime.
 
-CPU/FP32 generated 50 tokens in 2.56 seconds, reaching approximately 19.53 tokens per second. GPU/FP32 generated the same 50 tokens in 1.07 seconds, reaching approximately 46.63 tokens per second. In this run, GPU/FP32 was about 2.39 times faster than CPU/FP32.
+**FP16 didn't provide a measurable speed advantage over FP32:** CUDA FP16 reached 27.19 tokens/s, compared with 28.20 tokens/s for CUDA FP32, making FP16 about 3.6% slower in this run. This doesn't mean FP16 is inherently slower. With such a small model, batch size 1, and short autoregressive generation, raw arithmetic throughput may not be the main bottleneck. Kernel launch overhead, low GPU occupancy, memory access, and the sequential nature of token generation can reduce the speed advantage normally associated with lower numerical precision.
 
-GPU/FP16 generated 50 tokens in 1.09 seconds, reaching approximately 46.02 tokens per second. In this short benchmark, FP16 did not provide a meaningful throughput improvement over FP32.
+**The clearest FP16 benefit was lower VRAM usage:** Peak allocated VRAM dropped from 1897.18 MB in FP32 to 961.24 MB in FP16, a reduction of about 49.3%. Reserved VRAM also fell from 2024.00 MB to 1014.00 MB, or about 49.9%. This's consistent with the expected storage difference between 32-bit and 16-bit floating-point values. Peak allocated memory's the more direct measure of tensor memory usage, while reserved memory also includes memory held by PyTorch's CUDA caching allocator.
 
-The main difference between GPU/FP32 and GPU/FP16 was memory usage. Peak allocated VRAM decreased from approximately 1897 MB in FP32 to 961 MB in FP16, a reduction of about 49%.
+**The generated text was identical across all three configurations:** CPU FP32, CUDA FP32, and CUDA FP16 produced the same decoded output for this prompt. Since generation used greedy decoding with `do_sample=False`, the numerical differences between FP32 and FP16 weren't large enough to change the generated text in this particular run.
 
-The model was confirmed to be running on CUDA by checking `next(model.parameters()).device`, which reported `cuda:0`.
+**Higher process RAM usage doesn't demonstrate a memory leak:** RSS increased from 2749.77 MB on CPU to 2870.36 MB on CUDA FP32 and 3324.46 MB on CUDA FP16. However, these values were measured while the current model, inputs, and generated tensors were still alive. Cleanup with `del`, `gc.collect()`, and `torch.cuda.empty_cache()` happens afterward in the finally block. CUDA initialization and persistent library resources may also remain in memory after the first GPU run. A proper memory-retention test would need to measure RSS again after cleanup for each configuration.
 
-If the model did not fit in GPU memory, I would investigate a smaller model, FP16 or BF16, quantization, or CPU/GPU offload.
+**A single run isn't enough to establish a small performance difference:** Each configuration was measured only once, and the GPU runs lasted less than two seconds. At that scale, normal variation from OS scheduling, GPU clock behavior, thermal conditions, and other runtime effects could easily explain a difference of a few percent. The current results therefore support the conclusion that no meaningful FP32-versus-FP16 speed difference was observed, rather than the stronger claim that FP16 is slower.
+
+**The short warm-up may also affect measurement stability:** The benchmark performs only a 5-token warm-up before measuring a 50-token generation run. This's enough to avoid measuring a completely cold first execution, but it may not be enough to fully stabilize GPU clocks, kernel behavior, or other runtime effects. Repeating the benchmark several times after a longer warm-up would produce a more reliable comparison.
+
+**The workload's too small to generalize about FP16 performance:** The experiment uses a 0.5B-parameter model, batch size 1, and only 50 generated tokens. Under these conditions, GPU utilization may remain relatively low. Larger models, larger batch sizes, and different sequence lengths could produce a very different FP32-versus-FP16 relationship. More tests would be needed before drawing broader conclusions about precision-related performance.
+
+**The token counts make the three runs directly comparable:** All three configurations processed the same 13 input tokens and generated exactly 50 new tokens. The script calculates generated tokens as the final sequence length minus the input length and then uses that value to calculate tokens per second. This's what keeps the amount of measured generation work constant across the configurations. Although `max_new_tokens=50` defines only an upper limit, all three runs actually reached that limit.
+
+**Batching would mainly target throughput rather than single-request latency:** Larger batch sizes and continuous batching can improve GPU utilization by processing more work in parallel. This's especially useful when the goal is higher aggregate throughput across multiple requests.

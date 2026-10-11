@@ -38,28 +38,138 @@
 
 ## CPU/GPU Inference Findings
 
-**GPU provided a real but moderate speedup:** CUDA FP32 reached 28.20 tokens/s, compared with 17.91 tokens/s on CPU FP32, which corresponds to a speedup of about 1.57x. Total generation time dropped from 2.7921 seconds to 1.7730 seconds, a reduction of about 36.5%. This is a meaningful improvement, but not a dramatic one. With a 0.5B-parameter model, batch size 1, and autoregressive generation, the GPU is likely running below full utilization, so execution overhead and memory access costs make up a relatively large share of the total runtime.
+### Experimental setup and methodology
 
-**FP16 didn't provide a measurable speed advantage over FP32:** CUDA FP16 reached 27.19 tokens/s, compared with 28.20 tokens/s for CUDA FP32, making FP16 about 3.6% slower in this run. This doesn't mean FP16 is inherently slower. With such a small model, batch size 1, and short autoregressive generation, raw arithmetic throughput may not be the main bottleneck. Kernel launch overhead, low GPU occupancy, memory access, and the sequential nature of token generation can reduce the speed advantage normally associated with lower numerical precision.
+This experiment establishes a local inference baseline using `Qwen/Qwen2.5-0.5B-Instruct` across three execution configurations: CPU FP32, CUDA FP32, and CUDA FP16.
 
-**The clearest FP16 benefit was lower VRAM usage:** Peak allocated VRAM dropped from 1897.18 MB in FP32 to 961.24 MB in FP16, a reduction of about 49.3%. Reserved VRAM also fell from 2024.00 MB to 1014.00 MB, or about 49.9%. This is consistent with the expected storage difference between 32-bit and 16-bit floating-point values. Peak allocated memory is the more direct measure of tensor memory usage, while reserved memory also includes memory held by PyTorch's CUDA caching allocator.
+The benchmark was executed on an Intel Core i7-12800H processor and an NVIDIA RTX A3000 12GB Laptop GPU. Each configuration runs in a separate spawned subprocess to reduce interference from previously loaded models and persistent process allocations.
 
-**The generated text was identical across all three configurations:** CPU FP32, CUDA FP32, and CUDA FP16 produced the same decoded output for this prompt. Since generation used greedy decoding with `do_sample=False`, the numerical differences between FP32 and FP16 weren't large enough to change the generated text in this particular run.
+The model uses greedy decoding (`do_sample=False`) with a structured system-and-user chat template. Each configuration performs one unmeasured warm-up followed by five measured inference iterations.
 
-**Higher process RAM usage doesn't demonstrate a memory leak:** RSS increased from 2749.77 MB on CPU to 2870.36 MB on CUDA FP32 and 3324.46 MB on CUDA FP16. However, these values were measured while the current model, inputs, and generated tensors were still alive. Cleanup with `del`, `gc.collect()`, and `torch.cuda.empty_cache()` happens afterward in the finally block. CUDA initialization and persistent library resources may also remain in memory after the first GPU run. A proper memory-retention test would need to measure RSS again after cleanup for each configuration.
+The encoded prompt contains 44 tokens. Although the generation limit is 96 new tokens, every measured iteration generated 36 new tokens and terminated with an EOS token. No iteration reached the configured generation limit.
 
-**A single run isn't enough to establish a small performance difference:** Each configuration was measured only once, and the GPU runs lasted less than two seconds. At that scale, normal variation from OS scheduling, GPU clock behavior, thermal conditions, and other runtime effects could easily explain a difference of a few percent. The current results therefore support the conclusion that no meaningful FP32-versus-FP16 speed difference was observed, rather than the stronger claim that FP16 is slower.
+The following observations are based on the completed benchmark recorded on October 9, 2026.
 
-**The short warm-up may also affect measurement stability:** The benchmark performs only a 5-token warm-up before measuring a 50-token generation run. This is enough to avoid measuring a completely cold first execution, but it may not be enough to fully stabilize GPU clocks, kernel behavior, or other runtime effects. Repeating the benchmark several times after a longer warm-up would produce a more reliable comparison.
+### Inference performance
 
-**The workload is too small to generalize about FP16 performance:** The experiment uses a 0.5B-parameter model, batch size 1, and only 50 generated tokens. Under these conditions, GPU utilization may remain relatively low. Larger models, larger batch sizes, and different sequence lengths could produce a very different FP32-versus-FP16 relationship. More tests would be needed before drawing broader conclusions about precision-related performance.
+| Configuration | Mean time (s) | Median time (s) | Std. dev. (s) | Throughput (tokens/s) |
+|---|---:|---:|---:|---:|
+| CPU FP32 | 1.6820 | 1.6003 | 0.1317 | 21.40 |
+| CUDA FP32 | 0.7801 | 0.7702 | 0.0148 | 46.15 |
+| CUDA FP16 | 0.7880 | 0.7838 | 0.0098 | 45.69 |
 
-**The token counts make the three runs directly comparable:** All three configurations processed the same 13 input tokens and generated exactly 50 new tokens. The script calculates generated tokens as the final sequence length minus the input length and then uses that value to calculate tokens per second. This is what keeps the amount of measured generation work constant across the configurations. Although `max_new_tokens=50` defines only an upper limit, all three runs actually reached that limit.
+**GPU acceleration:** CUDA FP32 achieved approximately 2.16 times the aggregate token throughput of CPU FP32. The mean inference time decreased by approximately 53.6%.
 
-**Batching would mainly target throughput rather than single-request latency:** Larger batch sizes and continuous batching can improve GPU utilization by processing more work in parallel. This is especially useful when the goal is higher aggregate throughput across multiple requests.
+This demonstrates a clear performance advantage for GPU execution under the tested conditions. However, the result applies to this particular model, prompt, hardware configuration, and inference workload. It should not be generalized to other model sizes or execution environments.
+
+**FP32 versus FP16 performance:** CUDA FP16 achieved 45.69 tokens/s, compared with 46.15 tokens/s for CUDA FP32. The observed throughput difference was approximately 1%, with a small advantage for FP32.
+
+This experiment therefore did not demonstrate a meaningful inference-speed advantage from switching to FP16.
+
+However, this doesn't establish that FP32 is inherently faster. The benchmark doesn't measure GPU occupancy, memory bandwidth utilization, kernel execution times, or other hardware-level characteristics needed to explain the observed difference.
+
+### Timing metrics
+
+The `AverageInferenceTime` and `MedianInferenceTime` measurements represent the complete wall-clock duration of each `model.generate()` call, including prompt prefill and autoregressive decoding.
+
+The benchmark excludes model loading, tokenization, warm-up, and final text decoding from these timings.
+
+`AggregateTokenThroughput` is calculated by dividing the total number of newly generated tokens by the sum of the measured `model.generate()` durations.
+
+Consequently, this metric represents an effective generated-token rate over the complete inference call. It should not be interpreted as decode-only throughput.
+
+The experiment also doesn't separately measure time to first token (TTFT) or inter-token latency.
+
+### GPU memory and numerical precision
+
+| PyTorch CUDA metric | FP32 (MB) | FP16 (MB) |
+|---|---:|---:|
+| Peak allocated memory | 1989.76 | 1007.96 |
+| Peak reserved memory | 2122.32 | 1063.26 |
+| Reserved memory after inference | 2122.32 | 1063.26 |
+
+**FP16 substantially reduced GPU memory requirements:** Peak allocated memory decreased by approximately 49.3%, while peak reserved memory decreased by approximately 49.9%.
+
+This is consistent with the expected reduction in storage requirements when using 16-bit rather than 32-bit floating-point values.
+
+Unlike the small difference in inference speed, the reduction in PyTorch CUDA allocator memory was substantial.
+
+However, these measurements must be interpreted carefully. Allocated memory represents allocations tracked by PyTorch, while reserved memory also includes cached blocks maintained by its CUDA caching allocator.
+
+These values include resident model allocations but do not represent total GPU VRAM usage. CUDA driver resources, execution context overhead, and allocations managed outside the PyTorch allocator may not be included.
+
+The reserved-after-inference metric is a snapshot taken before worker termination, not a measurement of memory retained after complete cleanup.
+
+All memory figures in this experiment are expressed in decimal megabytes (MB).
+
+### System RAM and process memory
+
+The experiment also measures process-wide resident set size (RSS), which represents physical system RAM occupied by the benchmark process.
+
+| Configuration | RSS load delta (MB) | Sampled inference RSS peak (MB) |
+|---|---:|---:|
+| CPU FP32 | 2099.87 | 2882.11 |
+| CUDA FP32 | 378.72 | 1744.31 |
+| CUDA FP16 | 890.28 | 2431.06 |
+
+The RSS load delta is the difference between process memory before and after loading the tokenizer and model. It includes process-wide allocations and releases associated with model loading and supporting libraries, rather than exclusively measuring model weights.
+
+Interestingly, CUDA FP16 exhibited higher host-process RSS than CUDA FP32 despite using substantially less PyTorch-managed GPU memory.
+
+This demonstrates that system RAM and GPU memory are distinct measurements and should not be interpreted interchangeably. The current experiment doesn't isolate the allocations responsible for this difference.
+
+The inference RSS peak is sampled approximately every 10 milliseconds. Therefore, short-lived memory spikes may not be captured, and the sampling mechanism introduces some monitoring overhead.
+
+The benchmark also doesn't establish whether memory is retained after cleanup or whether a memory leak exists.
+
+### Generated tokens and response comparison
+
+All three configurations generated 36 new token IDs per measured iteration, producing 180 generated token IDs across the five iterations for each configuration.
+
+These counts include the EOS token used to terminate generation, even though special tokens are omitted from the final decoded response.
+
+The same decoded response was observed in the final measured iteration of CPU FP32, CUDA FP32, and CUDA FP16.
+
+However, identical decoded text doesn't establish numerical equivalence between the execution configurations. FP16 changes floating-point representation and may affect intermediate calculations even when the final generated tokens remain unchanged.
+
+An additional observation is that the generated response contained only one sentence, despite the system instruction requesting exactly two short sentences.
+
+This illustrates an important limitation: the benchmark records generated responses for inspection but doesn't automatically evaluate instruction following, factual correctness, semantic equivalence, or response quality.
+
+Therefore, the current experiment supports performance and memory observations, but not conclusions about relative output quality.
+
+### Measurement reliability and limitations
+
+The benchmark improves measurement consistency by using separate processes, an unmeasured warm-up, CUDA synchronization, repeated generation calls, and explicit measurement definitions.
+
+Nevertheless, the available results represent a single complete benchmark execution containing five measured iterations per configuration.
+
+The reported standard deviations describe variation between generation calls within that execution. They do not measure variation across independently repeated benchmark sessions.
+
+The configurations are also executed in a fixed order, so changes in GPU clocks, thermal conditions, CPU scheduling, or other system activity cannot be fully excluded.
+
+Although the measured workload is comparable across configurations, it contains only one prompt, batch size 1, and a relatively short generated response.
+
+These limitations are particularly important when interpreting the approximately 1% throughput difference between CUDA FP32 and CUDA FP16.
+
+### Conclusions
+
+The experiment establishes three main observations.
+
+1. **GPU execution provided a substantial performance advantage over CPU execution** for this model and workload, with CUDA FP32 achieving approximately 2.16 times the aggregate throughput of CPU FP32.
+
+2. **FP16 reduced PyTorch-managed GPU memory consumption by approximately half**, without producing a meaningful throughput improvement over FP32 in this execution.
+
+3. **Identical generated responses do not establish equivalent numerical behavior or response quality**, because the experiment doesn't implement dedicated correctness or quality evaluation.
+
+These results form a useful local inference baseline, but they should be treated as exploratory measurements rather than definitive hardware or numerical-precision benchmarks.
 
 ## Open questions
 
-The current baseline still leaves some questions for future experiments. Repeated runs are needed to evaluate measurement stability and normal runtime variation.
+A future experiment should repeat the complete benchmark across multiple independent executions and preserve individual iteration timings to characterize runtime variability more reliably.
 
-Larger models and different batch sizes should also be tested to understand how workload size and batching affect GPU utilization, throughput, and the FP32-versus-FP16 relationship.
+It would also be useful to measure time to first token, inter-token latency, GPU utilization, power consumption, and total device memory usage separately from PyTorch allocator statistics.
+
+Additional experiments should investigate larger models, different input and output lengths, and multiple batch sizes to determine how workload characteristics influence GPU acceleration and the FP32-versus-FP16 relationship.
+
+Finally, performance benchmarking should eventually be complemented by explicit output-quality evaluation, particularly when comparing numerical precision, different models, and coding-oriented workloads.

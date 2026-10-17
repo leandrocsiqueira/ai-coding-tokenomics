@@ -2,3 +2,5 @@ transformers
 pandas
 psutil
 matplotlib
+sentencepiece
+protobuf

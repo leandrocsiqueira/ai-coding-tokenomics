@@ -1,6 +1,8 @@
 transformers
+torch
 pandas
 psutil
 matplotlib
 sentencepiece
 protobuf
+

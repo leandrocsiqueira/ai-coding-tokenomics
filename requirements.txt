@@ -2,7 +2,5 @@ transformers
 torch
 pandas
 psutil
-matplotlib
-sentencepiece
-protobuf
-
+ipykernel
+jinja2

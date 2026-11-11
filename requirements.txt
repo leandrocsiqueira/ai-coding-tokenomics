@@ -1,6 +1,4 @@
-transformers
 torch
-pandas
+transformers
 psutil
-ipykernel
-jinja2
+pandas

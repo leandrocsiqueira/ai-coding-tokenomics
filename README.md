@@ -2,35 +2,49 @@
 
 An incremental engineering study exploring tokenization, inference performance, hardware utilization, numerical precision, cost, and benchmarking methodologies for AI-assisted software development.
 
-## Current Scope
+## 1. Current Scope
 
-The current version focuses on two experimental stages:
+The current version of the project covers two experimental stages:
 
-- **Tokenization:** Investigating how tokenizers represent text, generate token IDs, and produce different token counts for identical inputs.
+- **Tokenization:** Examining how tokenizers process text, generate token IDs, and produce different token counts for the same input.
 
-- **CPU/GPU inference:** Establishing a local inference baseline using a pretrained causal language model, comparing CPU FP32, CUDA FP32, and CUDA FP16 execution in terms of generation time, aggregate token throughput, and memory usage.
+- **CPU/GPU Inference:** Establishing a local inference baseline using a pretrained causal language model. The experiments compare CPU FP32, CUDA FP32, and CUDA FP16 configurations based on generation time, overall token throughput, and memory usage.
 
-The project is being developed incrementally, with reproducible experiments, recorded measurements, and documented findings.
+The project is being developed step by step, with experiments designed to be reproducible, measurements recorded, and findings documented.
 
-## Environment
+## 2. Environment
 
-The experiments were executed using the following environment:
+The experiments were conducted using the hardware and operating system listed below. The Python package versions match the current environment snapshot saved in `environment-freeze.txt`.
 
-| Component | Specification |
-|---|---|
-| Operating system | Ubuntu 24.04.5 LTS |
-| Python | 3.12.3 |
-| CPU | Intel Core i7-12800H |
-| GPU | NVIDIA RTX A3000 12GB Laptop GPU |
-| GPU memory | 12 GiB (12,288 MiB) |
-| NVIDIA driver | 595.91.07 |
-| CUDA version | 13.2 |
-| PyTorch | 2.14.0+cu132 |
-| Transformers | 5.17.0 |
+| Component        | Specification                    |
+| ---------------- | -------------------------------- |
+| Operating system | Ubuntu 24.04.5 LTS               |
+| Python           | 3.12.3                           |
+| CPU              | Intel Core i7-12800H             |
+| GPU              | NVIDIA RTX A3000 12GB Laptop GPU |
+| GPU memory       | 12 GiB (12,288 MiB)              |
+| NVIDIA driver    | 595.91.07                        |
+| CUDA version     | 13.2                             |
+| PyTorch          | 2.15.0+cu132                     |
+| Transformers     | 5.22.2                           |
 
-PyTorch was installed separately using the official installation selector for the appropriate CUDA environment.
 
-## How to Run
+The project uses three files to manage and document its Python dependencies:
+
+| File                     | Description                                                                                        |
+| ------------------------ | -------------------------------------------------------------------------------------------------- |
+| `requirements.txt`       | Lists the direct dependencies needed to run the project.                                           |
+| `requirements-dev.txt`   | Includes the project dependencies and additional tools used for notebook development.              |
+| `environment-freeze.txt` | Records all installed Python packages and their exact versions, including transitive dependencies. |
+
+
+PyTorch can be installed separately by following the [official installation instructions](https://pytorch.org/get-started/locally/) and selecting a build compatible with the target CPU or CUDA setup.
+
+
+**Note:** The current environment snapshot lists PyTorch 2.15.0+cu132 and Transformers 5.22.2, replacing the previously documented versions of 2.14.0+cu132 and 5.17.0, respectively. The freeze records PyTorch as torch==2.15.0, while the installed build reports the additional +cu132 identifier. This update doesn't mean that earlier benchmark results were reproduced using the newer versions.
+
+
+## 3. How to Run The Project
 
 Clone the repository and enter the project directory:
 
@@ -46,16 +60,60 @@ python3 -m venv .venv
 source .venv/bin/activate
 ```
 
-Upgrade pip and install the project dependencies:
+Upgrade pip:
 
 ```bash
 python -m pip install --upgrade pip
-pip install -r requirements.txt
 ```
 
-Install PyTorch separately using the [official PyTorch installation instructions](https://pytorch.org/get-started/locally/), selecting a compatible configuration for the target environment.
+### 3.1. Installing Dependencies
 
-### Environment Validation
+The project requires PyTorch 2.15.0 with CUDA 13.2 support, as specified in `requirements.txt`.
+
+First, install the pinned PyTorch build from the official CUDA 13.2 package index:
+
+```bash
+python -m pip install "torch==2.15.0+cu132" --index-url https://download.pytorch.org/whl/cu132
+```
+
+To run the Python scripts, install the project dependencies:
+
+```bash
+python -m pip install -r requirements.txt
+```
+
+Alternatively, to work with the project's Jupyter notebooks, install the development dependencies:
+
+```bash
+python -m pip install -r requirements-dev.txt
+```
+
+The development requirements include all core project dependencies, along with JupyterLab and ipykernel. Installing both requirements files separately is therefore unnecessary.
+
+To start JupyterLab, run:
+
+```bash
+jupyter lab
+```
+
+The pinned CUDA-specific PyTorch build targets compatible NVIDIA GPU environments. CPU-only environments may require a different PyTorch distribution and a corresponding adjustment to the dependency specification.
+
+### 3.2. Environment Snapshot
+
+The `environment-freeze.txt` file records the installed Python packages and their versions, including development tools and transitive dependencies.
+
+To install the recorded package versions on a compatible system, run:
+
+```bash
+python -m pip install -r environment-freeze.txt
+```
+
+This file provides a reference for the software environment and helps support reproducibility. However, it doesn't include details about the operating system, NVIDIA drivers, hardware, or all system-level dependencies.
+
+The snapshot also doesn't retain the `+cu132` PyTorch build identifier. To reproduce the CUDA environment, the corresponding PyTorch build must be obtained or verified separately.
+
+
+### 3.3. Environment Validation
 
 ```bash
 python src/00_environment_check.py
@@ -63,128 +121,47 @@ python src/00_environment_check.py
 
 Checks the local environment and available hardware.
 
-### Experiment 01: Tokenizer Basics
+
+## 4. Experiments
+
+### 4.1. Tokenization Basics
 
 ```bash
 python src/01_tokenizer_basics.py
 ```
 
-Investigates tokenization behavior using a pretrained tokenizer, including token IDs, token representations, token counts, and text reconstruction.
+This script explores how tokenization works in language models using the tokenizer from [Qwen/Qwen2.5-0.5B-Instruct](https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct). It processes different text samples, examines how they're converted into tokens and numerical identifiers (token IDs), and decodes them to reconstruct the original text. It also records character and token counts, calculates the average number of characters per token, and checks whether the original text is preserved after decoding. These steps help show how different text characteristics affect the way the tokenizer represents input.
 
-### Experiment 02: Tokenizer Comparison
+### 4.2. Tokenizer Comparison
 
 ```bash
 python src/02_compare_tokenizers.py
 ```
 
-Compares how different tokenizers process identical inputs and records differences in token counts and tokenization density.
+This script compares how different tokenizers process the same input texts. It uses the tokenizers from [Qwen/Qwen2.5-0.5B-Instruct](https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct) and [HuggingFaceTB/SmolLM2-360M-Instruct](https://huggingface.co/HuggingFaceTB/SmolLM2-360M-Instruct) to measure character counts, token counts, and the average number of characters per token. The results are displayed in a table and saved to a CSV file (`results/tokenizer_comparison.csv`), making it easier to identify differences in text segmentation and understand how the choice of tokenizer affects the number of tokens needed to represent the same content.
 
-Results are saved to:
 
-```text
-results/tokenizer_comparison.csv
-```
-
-### Experiment 03: CPU/GPU Inference Baseline
+### 4.3. CPU and GPU Inference Benchmark
 
 ```bash
 python src/03_cpu_gpu_baseline.py
 ```
 
-Executes inference using `Qwen/Qwen2.5-0.5B-Instruct` across the following configurations, depending on CUDA availability:
+This script establishes an initial inference performance baseline for [Qwen/Qwen2.5-0.5B-Instruct](https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct) by comparing three execution configurations: CPU FP32, CUDA FP32, and CUDA FP16. For each available configuration, it loads the model, prepares the input, runs a warmup generation, and measures a separate generation run. The script records inference time, the number of generated tokens, effective generated-token throughput (tokens per second), process RAM usage, and PyTorch-managed GPU memory metrics. Results are displayed in the terminal and saved to a CSV file (`results/cpu_gpu_baseline.csv`), providing a basis for comparing inference performance and memory usage across hardware configurations and numerical precisions.
 
-| Configuration | Device | Data type |
-|---|---|---|
-| CPU FP32 | CPU | float32 |
-| CUDA FP32 | GPU | float32 |
-| CUDA FP16 | GPU | float16 |
 
-Each configuration runs in an isolated spawned subprocess, with one unmeasured warm-up and five measured generation iterations.
+## 5. Experimental Results
 
-The benchmark uses greedy decoding (`do_sample=False`) and a structured chat template. CUDA execution is synchronized before and after timing to account for asynchronous GPU operations.
+**Status: Pending Review**
 
-Measurements include generation duration, aggregate token throughput, process RAM usage, and PyTorch CUDA allocator memory statistics.
+The project includes experimental results from tokenization and CPU/GPU inference benchmarks. However, these results and their associated analyses have not yet been fully reviewed against the corresponding script versions and execution methodologies.
 
-Results are saved to:
+Once the experimental records have been verified, this section will consolidate the quantitative comparisons, observations, and conclusions.
 
-```text
-results/cpu_gpu_baseline.csv
-```
+Existing results are available in the [`results/`](results/) directory. Additional findings are documented in [`docs/findings.md`](docs/findings.md) and should be considered preliminary until reviewed.
 
-The CSV preserves historical records and stores measurement metadata to support interpretation and subsequent analysis.
 
-## Experimental Results
-
-### Tokenization Comparison
-
-Qwen and SmolLM2 produced different token counts when processing identical inputs.
-
-Across five test texts, Qwen generated 36 tokens in total, compared with 48 tokens for SmolLM2.
-
-For this sample, SmolLM2 used approximately 33% more tokens than Qwen.
-
-These observations demonstrate differences in tokenization behavior for the tested inputs. They do not establish general tokenization efficiency or overall model performance.
-
-### CPU/GPU Inference Baseline
-
-The latest documented benchmark was executed on October 9, 2026, using `Qwen/Qwen2.5-0.5B-Instruct`.
-
-Each configuration processed 44 input tokens and generated 36 new token IDs per measured iteration. All measured generations terminated with an EOS token before reaching the 96-token limit.
-
-#### Inference Performance
-
-| Configuration | Mean generate() time (s) | Median time (s) | Aggregate throughput (tokens/s) |
-|---|---:|---:|---:|
-| CPU FP32 | 1.6820 | 1.6003 | 21.40 |
-| CUDA FP32 | 0.7801 | 0.7702 | 46.15 |
-| CUDA FP16 | 0.7880 | 0.7838 | 45.69 |
-
-CUDA FP32 achieved approximately **2.16x the aggregate throughput** of CPU FP32, reducing mean generation time by approximately 53.6%.
-
-CUDA FP16 achieved similar throughput to CUDA FP32, with an observed difference of approximately 1%. This execution did not demonstrate a meaningful speed advantage from using FP16.
-
-**Timing scope:** Inference times include the complete `model.generate()` call, covering prompt prefill and autoregressive decoding. Model loading, tokenization, warm-up, and final text decoding are excluded.
-
-Aggregate throughput is calculated as total newly generated token IDs divided by the summed full-call generation time. It does not represent decode-only throughput.
-
-#### GPU Memory Usage
-
-| PyTorch CUDA metric | FP32 (MB) | FP16 (MB) |
-|---|---:|---:|
-| Peak allocated memory | 1989.76 | 1007.96 |
-| Peak reserved memory | 2122.32 | 1063.26 |
-
-FP16 reduced peak PyTorch-allocated GPU memory by approximately **49.3%** and peak reserved memory by approximately **49.9%**.
-
-These measurements represent PyTorch CUDA allocator statistics, not total GPU VRAM usage. Reserved memory includes cached allocator blocks, and allocations outside PyTorch may not be captured.
-
-#### Interpretation and Limitations
-
-The current baseline demonstrates a substantial GPU performance advantage over CPU execution and a significant reduction in PyTorch-managed GPU memory when using FP16.
-
-However, the findings are limited to one model, one prompt, batch size 1, and a single complete benchmark execution containing five measured iterations per configuration.
-
-The experiment does not separately measure time to first token, inter-token latency, GPU utilization, or total device memory usage.
-
-Generated responses are retained for inspection, but the benchmark does not evaluate factual correctness, instruction following, semantic equivalence, or response quality.
-
-The results should therefore be interpreted as exploratory baseline measurements rather than definitive performance comparisons.
-
-## Results and Documentation
-
-The repository contains the following experimental artifacts:
-
-| File | Description |
-|---|---|
-| `results/tokenizer_comparison.csv` | Tokenizer comparison measurements |
-| `results/cpu_gpu_baseline.csv` | Inference performance, memory metrics, and execution metadata |
-| `results/nvidia-smi.txt` | NVIDIA hardware and driver information |
-| `docs/findings.md` | Detailed experimental observations, interpretation, and limitations |
-| `environment-freeze.txt` | Recorded Python environment dependencies |
-
-Detailed findings and open questions are documented in [docs/findings.md](docs/findings.md).
-
-## Roadmap
+## 6. Roadmap
 
 The project will evolve incrementally through the following areas:
 
@@ -198,8 +175,8 @@ The project will evolve incrementally through the following areas:
 
 Future experiments will focus on improving measurement reliability, evaluating additional model configurations, and connecting inference performance to computational cost and practical software development workloads.
 
-## Project Status
+## 7. Project Status
 
-**Current stage:** Tokenization experiments and local CPU/GPU inference baseline completed.
+**Current stage:** Initial tokenization and CPU/GPU inference experiments implemented, with experimental results pending review and consolidation.
 
-The repository remains under active development. Findings reflect the experimental conditions and available measurements and may be refined as the methodology evolves.
+The repository remains under active development. Existing findings reflect the experimental conditions and available measurements and may be refined as the methodology evolves.

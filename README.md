@@ -68,13 +68,7 @@ python -m pip install --upgrade pip
 
 ### 3.1. Installing Dependencies
 
-The project requires PyTorch 2.15.0 with CUDA 13.2 support, as specified in `requirements.txt`.
-
-First, install the pinned PyTorch build from the official CUDA 13.2 package index:
-
-```bash
-python -m pip install "torch==2.15.0+cu132" --index-url https://download.pytorch.org/whl/cu132
-```
+The project requires PyTorch 2.15.0 with CUDA 13.2 support, as specified in `requirements.txt`. This file also configures the [official CUDA 13.2 package index](https://download.pytorch.org/whl/cu132), where the pinned `torch==2.15.0+cu132` build is hosted. PyPI alone does not provide this CUDA-specific version, so the additional index is required to avoid a `No matching distribution found` error. No separate PyTorch installation is necessary.
 
 To run the Python scripts, install the project dependencies:
 

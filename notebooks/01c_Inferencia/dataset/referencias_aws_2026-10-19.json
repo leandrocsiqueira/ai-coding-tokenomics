@@ -1,0 +1,37 @@
+{
+  "checked_on": "2026-10-19",
+  "region": "us-east-1",
+  "region_name": "US East (N. Virginia)",
+  "currency": "USD",
+  "operating_system": "Linux",
+  "purchase_option": "On-Demand",
+  "tenancy": "shared",
+  "price_manifest": {
+    "serviceId": "ec2",
+    "accessType": "publish",
+    "hawkFilePublicationDate": "2026-10-15T19:13:16Z",
+    "ETLIngestionTriggerDate": "2026-10-15T19:13:16Z",
+    "currencyCode": "USD",
+    "source": "ec2-ondemand-without-sec-sel"
+  },
+  "source_url": "https://b0.p.awsstatic.com/pricing/2.0/meteredUnitMaps/ec2/USD/current/ec2-ondemand-without-sec-sel/US%20East%20%28N.%20Virginia%29/Linux/index.json",
+  "aws_pricing_page": "https://aws.amazon.com/ec2/pricing/on-demand/",
+  "instances": [
+    {
+      "instance_type": "c6i.xlarge",
+      "usd_per_hour": 0.17,
+      "vcpus": 4,
+      "ram": "8 GiB",
+      "gpu": null,
+      "rate_code": "JPN4K2NQVRWGTQGS.JRTCKXETXF.6YS6EN2CT7"
+    },
+    {
+      "instance_type": "g4dn.xlarge",
+      "usd_per_hour": 0.526,
+      "vcpus": 4,
+      "ram": "16 GiB",
+      "gpu": "NVIDIA T4, 16 GB",
+      "rate_code": "7TVXMFHQR6U7W5CV.JRTCKXETXF.6YS6EN2CT7"
+    }
+  ]
+}

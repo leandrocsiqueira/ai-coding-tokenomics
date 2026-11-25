@@ -31,7 +31,7 @@ Adote como premissa que as amostras representam o perfil dos demais clientes e q
 | `g4dn.xlarge`, GPU NVIDIA T4 | GPU FP32 | US$ 0,526 |
 | A mesma `g4dn.xlarge` | GPU FP16 | US$ 0,526 |
 
-Preços Linux On-Demand em `us-east-1`, referência de **19/10/2026**: [valores preservados](dataset/referencias_aws_2026-10-19.json) e [regras de cobrança EC2](https://aws.amazon.com/ec2/pricing/on-demand/).
+Preços Linux On-Demand em `us-east-1`, referência de **19/10/2026**: [valores preservados](../dataset/referencias_aws_2026-10-19.json) e [regras de cobrança EC2](https://aws.amazon.com/ec2/pricing/on-demand/).
 
 Para o exercício, considere uma imagem com bibliotecas e arquivos do modelo disponíveis em disco. Adote **60 segundos adicionais para inicialização e encerramento da máquina**, iguais nas três alternativas. Esse valor é uma premissa da simulação, não uma medição AWS.
 

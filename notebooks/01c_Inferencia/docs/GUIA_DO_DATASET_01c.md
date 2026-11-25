@@ -1,6 +1,6 @@
 # Guia do lote diário de consumo de cartão
 
-O arquivo [consumo_cartao_credito_01c.json](dataset/consumo_cartao_credito_01c.json) contém **24 amostras sintéticas**, uma por cliente. São a amostra fornecida para medir o [caso do cliente](CASO_CLIENTE_INFRAESTRUTURA_01c.md), cuja base de produção tem **10 mil clientes por execução diária**. Execute somente essas 24 amostras e projete o tempo do lote completo.
+O arquivo [consumo_cartao_credito_01c.json](../dataset/consumo_cartao_credito_01c.json) contém **24 amostras sintéticas**, uma por cliente. São a amostra fornecida para medir o [caso do cliente](CASO_CLIENTE_INFRAESTRUTURA_01c.md), cuja base de produção tem **10 mil clientes por execução diária**. Execute somente essas 24 amostras e projete o tempo do lote completo.
 
 Cada amostra contém de 36 a 60 compras acumuladas de 1 a 18 de outubro de 2026. O lote é reprocessado a cada 24 horas para atualizar os resumos; não significa que cada cliente realizou todas essas compras em um único dia.
 
@@ -18,7 +18,7 @@ A instrução pede duas frases, com até 50 palavras, informando o total, as dua
 
 ## Loader
 
-O [loader fornecido](loader_dataset.py) usa apenas a biblioteca padrão do Python. `carregar_dataset(caminho)` lê o JSON em UTF-8 e devolve um dicionário. Percorra `dataset["samples"]` e use o campo `prompt` de cada amostra na inferência.
+O [loader fornecido](../dataset/loader_dataset.py) usa apenas a biblioteca padrão do Python. `carregar_dataset(caminho)` lê o JSON em UTF-8 e devolve um dicionário. Percorra `dataset["samples"]` e use o campo `prompt` de cada amostra na inferência.
 
 **Use o loader como base para escrever sua versão. Na apresentação, você deve saber explicar o que ele recebe, faz e devolve.** Preserve `sample_id` nos resultados para relacionar cada resumo à sua entrada.
 

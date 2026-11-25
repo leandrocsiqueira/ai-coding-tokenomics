@@ -1,14 +1,20 @@
-## Environment
+## Historical environment snapshot
+
+The software versions below were previously recorded in this document. The October 9 experiment CSV confirms the PyTorch and Transformers versions. The simple-baseline CSV does not record software versions, so these values should not be assumed to describe that run or the current installation.
+
 - **Operating system:** `Ubuntu 24.04.5 LTS`
 - **Python:** `3.12.3`
 - **PyTorch:** `2.14.0+cu132`
 - **Transformers:** `5.17.0`
 - **CUDA available in PyTorch:** `True`
 - **GPU:** `NVIDIA RTX A3000 12GB Laptop GPU`
-- **Total VRAM:** `11.63 GB`
+- **Total VRAM reported by PyTorch:** `11.63 GiB`
 - **NVIDIA driver:** `595.91.07`
 - **CUDA (as reported by `nvidia-smi`):** `13.2`
 - **PyTorch CUDA build**: `13.2`
+
+The PyTorch VRAM reading and its binary-unit conversion are recorded in the [inference study notebook](../notebooks/03_estudo_inferencia_01c.ipynb). The separate [September 22 NVIDIA-SMI snapshot](../results/nvidia-smi.txt) reports `12288 MiB` and the driver/CUDA versions listed above; it is not a measurement taken during the October 9 benchmark.
+
 ---
 
 ## Tokenization Findings
@@ -38,19 +44,55 @@
 
 ## CPU/GPU Inference Findings
 
-### Experimental setup and methodology
+### Result provenance
+
+Two different inference protocols are represented in the project. Both use `Qwen/Qwen2.5-0.5B-Instruct`, but their prompt format, warm-up budget, measured generation budget, repetition count, and process isolation differ.
+
+| Protocol | Input tokens | Warm-up limit (new tokens) | Measured generations per configuration | Measured generation limit (new tokens) | CUDA FP32 / CPU FP32 throughput ratio |
+|---|---:|---:|---:|---:|---:|
+| Simple baseline preserved in the current tree | 13 | 5 | 1 | 50 | 1.57x |
+| Historical October 9 experiment | 44 | 96 | 5 | 96 | 2.16x |
+
+Sources:
+
+- **Simple baseline:** [current CSV](../results/cpu_gpu_baseline.csv), [CSV at revision `3a1be99`](https://github.com/leandrocsiqueira/ai-coding-tokenomics/blob/3a1be993041ed75f77f26f23b0cacf0aff507d30/results/cpu_gpu_baseline.csv), and [implementation at that revision](https://github.com/leandrocsiqueira/ai-coding-tokenomics/blob/3a1be993041ed75f77f26f23b0cacf0aff507d30/src/03_cpu_gpu_baseline.py). The [local archived CSV](../results/archive/cpu_gpu_baseline_pre_revision_2026-10-30.csv) is identical to the current simple-baseline CSV; it does not contain the October 9 results.
+- **October 9 experiment:** [historical CSV at revision `9d12a8b`](https://github.com/leandrocsiqueira/ai-coding-tokenomics/blob/9d12a8b312d48bf5daa1c3ee05f157b670aae341/results/cpu_gpu_baseline.csv) and [implementation at that revision](https://github.com/leandrocsiqueira/ai-coding-tokenomics/blob/9d12a8b312d48bf5daa1c3ee05f157b670aae341/src/03_cpu_gpu_baseline.py). The expanded implementation is now preserved in [`experiments/cpu_gpu_complete_test.py`](../experiments/cpu_gpu_complete_test.py).
+
+Each throughput ratio compares CPU FP32 and CUDA FP32 within its own protocol. The difference between 1.57x and 2.16x does not establish an improvement between benchmark versions because the workloads and measurement conditions changed.
+
+### Simple baseline preserved in the current tree
+
+The simple baseline tokenizes the prompt directly, without a chat template. It runs the configurations sequentially in the same process, with one unmeasured warm-up of up to 5 new tokens and one measured generation of up to 50 new tokens per configuration. All three recorded configurations received 13 input tokens and generated 50 new tokens.
+
+| Configuration | Measured time (s) | Generated tokens | Throughput (tokens/s) |
+|---|---:|---:|---:|
+| CPU FP32 | 2.7921 | 50 | 17.91 |
+| CUDA FP32 | 1.7730 | 50 | 28.20 |
+| CUDA FP16 | 1.8389 | 50 | 27.19 |
+
+CUDA FP32 achieved approximately **1.57x** the CPU FP32 throughput (`28.201407 / 17.907935`). Because all configurations generated the same number of new tokens, this also corresponds to the CPU-to-CUDA FP32 elapsed-time ratio. Each time includes the complete measured generation, including prompt prefill and autoregressive decoding, while excluding model loading, tokenization, warm-up, and final text decoding.
+
+The CSV contains only one measured generation per configuration. It does not quantify timing variability, establish a systematic FP32-versus-FP16 speed difference, or record generated responses for quality comparison. It also lacks execution timestamps and dependency versions, so the October 9 environment metadata cannot be independently assigned to this baseline run.
+
+The `ram_rss_mb`, `vram_peak_allocated_mb`, and `vram_reserved_mb` columns are expressed in **MiB**, despite their `_mb` suffixes, because the implementation divides bytes by `1024 ** 2`. These values must not be compared directly with the decimal-MB values of the October 9 experiment without converting units.
+
+### Historical October 9 experiment
+
+The following methodology, performance tables, memory measurements, and response observations refer exclusively to the historical October 9, 2026 execution preserved at `9d12a8b`.
+
+#### Experimental setup and methodology
 
 This experiment establishes a local inference baseline using `Qwen/Qwen2.5-0.5B-Instruct` across three execution configurations: CPU FP32, CUDA FP32, and CUDA FP16.
 
 The benchmark was executed on an Intel Core i7-12800H processor and an NVIDIA RTX A3000 12GB Laptop GPU. Each configuration runs in a separate spawned subprocess to reduce interference from previously loaded models and persistent process allocations.
 
-The model uses greedy decoding (`do_sample=False`) with a structured system-and-user chat template. Each configuration performs one unmeasured warm-up followed by five measured inference iterations.
+The model uses greedy decoding (`do_sample=False`) with a structured system-and-user chat template. Each configuration performs one unmeasured warm-up of up to 96 new tokens followed by five measured inference iterations.
 
-The encoded prompt contains 44 tokens. Although the generation limit is 96 new tokens, every measured iteration generated 36 new tokens and terminated with an EOS token. No iteration reached the configured generation limit.
+The encoded prompt contains 44 tokens and the measured generation limit is 96 new tokens. The CSV records 180 newly generated tokens across five measured iterations per configuration, with 36 new tokens and an EOS stop reason in the last iteration. It reports zero iterations classified as reaching the generation limit, but does not preserve the token count or stop reason of each individual iteration.
 
-The following observations are based on the completed benchmark recorded on October 9, 2026.
+The CSV records PyTorch `2.14.0+cu132`, Transformers `5.17.0`, and `RunStartedAt=2026-10-09T13:27:06.278779-03:00` for this execution.
 
-### Inference performance
+#### Inference performance
 
 | Configuration | Mean time (s) | Median time (s) | Std. dev. (s) | Throughput (tokens/s) |
 |---|---:|---:|---:|---:|
@@ -68,7 +110,7 @@ This experiment therefore did not demonstrate a meaningful inference-speed advan
 
 However, this doesn't establish that FP32 is inherently faster. The benchmark doesn't measure GPU occupancy, memory bandwidth utilization, kernel execution times, or other hardware-level characteristics needed to explain the observed difference.
 
-### Timing metrics
+#### Timing metrics
 
 The `AverageInferenceTime` and `MedianInferenceTime` measurements represent the complete wall-clock duration of each `model.generate()` call, including prompt prefill and autoregressive decoding.
 
@@ -80,7 +122,7 @@ Consequently, this metric represents an effective generated-token rate over the 
 
 The experiment also doesn't separately measure time to first token (TTFT) or inter-token latency.
 
-### GPU memory and numerical precision
+#### GPU memory and numerical precision
 
 | PyTorch CUDA metric | FP32 (MB) | FP16 (MB) |
 |---|---:|---:|
@@ -100,9 +142,9 @@ These values include resident model allocations but do not represent total GPU V
 
 The reserved-after-inference metric is a snapshot taken before worker termination, not a measurement of memory retained after complete cleanup.
 
-All memory figures in this experiment are expressed in decimal megabytes (MB).
+All memory figures in this October 9 experiment are expressed in decimal megabytes (MB), using bytes divided by `1000 ** 2`.
 
-### System RAM and process memory
+#### System RAM and process memory
 
 The experiment also measures process-wide resident set size (RSS), which represents physical system RAM occupied by the benchmark process.
 
@@ -122,11 +164,11 @@ The inference RSS peak is sampled approximately every 10 milliseconds. Therefore
 
 The benchmark also doesn't establish whether memory is retained after cleanup or whether a memory leak exists.
 
-### Generated tokens and response comparison
+#### Generated tokens and response comparison
 
-All three configurations generated 36 new token IDs per measured iteration, producing 180 generated token IDs across the five iterations for each configuration.
+Each configuration recorded 180 new token IDs in total across five measured iterations, an average of 36 per iteration. The CSV field `TotalModelResponseTokens` describes the last measured response, which contained 36 new token IDs in all three configurations. The aggregate total and last-response count do not establish that every iteration had the same token count.
 
-These counts include the EOS token used to terminate generation, even though special tokens are omitted from the final decoded response.
+The token counts include special tokens when generated. In the last measured response, the count includes the EOS token recorded by `LastResponseStopReason=eos_token`, even though special tokens are omitted from the decoded text. Stop reasons and decoded responses for earlier iterations are not preserved in this CSV.
 
 The same decoded response was observed in the final measured iteration of CPU FP32, CUDA FP32, and CUDA FP16.
 
@@ -138,7 +180,7 @@ This illustrates an important limitation: the benchmark records generated respon
 
 Therefore, the current experiment supports performance and memory observations, but not conclusions about relative output quality.
 
-### Measurement reliability and limitations
+#### Measurement reliability and limitations
 
 The benchmark improves measurement consistency by using separate processes, an unmeasured warm-up, CUDA synchronization, repeated generation calls, and explicit measurement definitions.
 
@@ -152,7 +194,7 @@ Although the measured workload is comparable across configurations, it contains 
 
 These limitations are particularly important when interpreting the approximately 1% throughput difference between CUDA FP32 and CUDA FP16.
 
-### Conclusions
+#### Conclusions
 
 The experiment establishes three main observations.
 

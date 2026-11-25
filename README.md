@@ -82,7 +82,7 @@ Alternatively, to work with the project's Jupyter notebooks, install the develop
 python -m pip install -r requirements-dev.txt
 ```
 
-The development requirements include all core project dependencies, along with JupyterLab and ipykernel. Installing both requirements files separately is therefore unnecessary.
+The development requirements include all core project dependencies, along with JupyterLab, ipykernel, Matplotlib, and NumPy for the notebooks and their plots. Installing both requirements files separately is therefore unnecessary.
 
 To start JupyterLab, run:
 

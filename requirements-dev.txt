@@ -2,3 +2,5 @@
 
 jupyterlab==4.6.6
 ipykernel==7.4.0
+matplotlib==3.11.2
+numpy==2.5.5

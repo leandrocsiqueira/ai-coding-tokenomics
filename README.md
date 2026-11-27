@@ -185,6 +185,28 @@ Once the experimental records have been verified, this section will consolidate 
 
 Existing results are available in the [`results/`](results/) directory. Additional findings are documented in [`docs/findings.md`](docs/findings.md) and should be considered preliminary until reviewed.
 
+### 5.1. Inference Protocols and Result Provenance
+
+The inference records represent two protocols using Qwen/Qwen2.5-0.5B-Instruct:
+
+| Aspect | Simple baseline | Historical experiment — October 9, 2026 |
+| --- | --- | --- |
+| Prompt format | Direct tokenization | System-and-user chat template |
+| Recorded input tokens | 13 | 44 |
+| Warmup limit (new tokens) | 5 | 96 |
+| Measured generations per configuration | 1 | 5 |
+| Measured generation limit (new tokens) | 50 | 96 |
+| Process isolation | Configurations share one process | Separate subprocess per configuration |
+| CPU FP32 throughput (tokens/s) | 17.91 | 21.40 |
+| CUDA FP32 throughput (tokens/s) | 28.20 | 46.15 |
+| CUDA FP32 / CPU FP32 throughput ratio | Approximately **1.57×** | Approximately **2.16×** |
+
+The simple-baseline figures come from the [CSV in the current tree](results/cpu_gpu_baseline.csv). The October 9 figures come from the [historical CSV at revision `9d12a8b`](https://github.com/leandrocsiqueira/ai-coding-tokenomics/blob/9d12a8b312d48bf5daa1c3ee05f157b670aae341/results/cpu_gpu_baseline.csv). The expanded implementation is maintained in `experiments/cpu_gpu_complete_test.py`; the historical figures do not represent a new execution of that script with the current dependencies.
+
+Each ratio compares CUDA FP32 with CPU FP32 within its own protocol, using the recorded throughput values before rounding. The difference between 1.57× and 2.16× does not establish a performance improvement between benchmark versions: prompt format, generation limits, repetition count, and process isolation changed. Throughput covers the complete measured `model.generate()` call, including prompt prefill and autoregressive decoding.
+
+These are exploratory results: the simple baseline contains one measured generation per configuration, and the historical record contains one benchmark session with five measured generations per configuration. See the [result provenance and limitations](docs/findings.md#result-provenance) for the detailed analysis.
+
 
 ## 6. Roadmap
 

@@ -10,6 +10,8 @@ The current version of the project covers two experimental stages:
 
 - **CPU/GPU Inference:** Establishing a local inference baseline using a pretrained causal language model. The experiments compare CPU FP32, CUDA FP32, and CUDA FP16 configurations based on generation time, overall token throughput, and memory usage.
 
+The repository also includes an extended inference experiment and study notebooks covering Python and Pandas, tokenizer behavior, text preprocessing, and investigation of the inference baseline. The inference study includes an ongoing capacity and infrastructure-cost case study.
+
 The project is being developed step by step, with experiments designed to be reproducible, measurements recorded, and findings documented.
 
 ## 2. Environment
@@ -142,6 +144,33 @@ python src/03_cpu_gpu_baseline.py
 ```
 
 This script establishes an initial inference performance baseline for [Qwen/Qwen2.5-0.5B-Instruct](https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct) by comparing three execution configurations: CPU FP32, CUDA FP32, and CUDA FP16. For each available configuration, it loads the model, prepares the input, runs a warmup generation, and measures a separate generation run. The script records inference time, the number of generated tokens, effective generated-token throughput (tokens per second), process RAM usage, and PyTorch-managed GPU memory metrics. Results are displayed in the terminal and saved to a CSV file (`results/cpu_gpu_baseline.csv`), providing a basis for comparing inference performance and memory usage across hardware configurations and numerical precisions.
+
+### 4.4. Extended CPU/GPU Inference Experiment
+
+Run the [extended inference experiment](experiments/cpu_gpu_complete_test.py) from the repository root:
+
+```bash
+python experiments/cpu_gpu_complete_test.py
+```
+
+This experiment uses Qwen/Qwen2.5-0.5B-Instruct to compare CPU FP32 and, when CUDA is available, CUDA FP32 and CUDA FP16. Each configuration runs in a separate subprocess and uses a system-and-user chat template, one unmeasured warmup generation of up to 96 new tokens, and five measured generations with the same 96-token limit. Generation uses `do_sample=False` and can stop before reaching the limit.
+
+The experiment records mean, median, and standard deviation of generation time, aggregate generated-token throughput, process RSS and PyTorch CUDA memory metrics, environment and protocol metadata, execution status, and the last generated response. Timings cover the complete `model.generate()` call, including prompt prefill and autoregressive decoding. Generated responses are retained for inspection; the experiment does not automatically evaluate response quality. Its protocol differs from the simple baseline described in section 4.3.
+
+**Results file — current implementation:** Both inference scripts write to `results/cpu_gpu_baseline.csv`. The extended experiment preserves existing records and adds new rows and columns as needed. The simple baseline replaces the CSV, so running it afterward removes the accumulated records from that file. Preserve a copy before running either experiment if the existing results need to be retained. Improving result preservation and traceability in the simple baseline is planned in section 7 of the ongoing 01c inference study.
+
+### 4.5. Study and Exploration Notebooks
+
+After installing `requirements-dev.txt`, start `jupyter lab` from the repository root and open the relevant notebook:
+
+| Notebook | Focus |
+| --- | --- |
+| [Python and Pandas Review](notebooks/01_python_pandas_review.ipynb) | Python and Pandas fundamentals used in the project, memory units, DataFrame indexes, and CSV export/import. |
+| [Tokenizer Exploration](notebooks/02_tokenizer_exploration.ipynb) | Qwen tokenizer behavior, token IDs, internal token representations, decoding, offsets, and effects of input formatting. |
+| [Token Counts and Text Preprocessing](experiments/token_counts_and_preprocessing.ipynb) | Comparison of Qwen, SmolLM2, mBERT, and mT5 tokenizers across text formats and preprocessing conditions, including checks on text preservation. This notebook counts tokens without running model inference. |
+| [Inference Baseline Investigation — 01c](notebooks/03_estudo_inferencia_01c.ipynb) | Portuguese-language investigation of execution flow, generation settings, and measurement methodology, with an ongoing capacity and infrastructure-cost case study. |
+
+In the published 01c notebook, sections 1–3 have been developed, while sections 4–8 remain marked `TO-DO`. Its reference baseline is revision [`3a1be99`](https://github.com/leandrocsiqueira/ai-coding-tokenomics/tree/3a1be993041ed75f77f26f23b0cacf0aff507d30). The remaining activities cover model loading, interpretation of RAM and GPU memory, throughput and speedup calculations, result preservation and traceability, and the client case. The supporting [client case](notebooks/01c_Inferencia/docs/CASO_CLIENTE_INFRAESTRUTURA_01c.md) proposes measuring 24 synthetic samples and projecting the processing time and infrastructure cost for 10,000 clients; a final recommendation is still pending in the published notebook.
 
 
 ## 5. Experimental Results

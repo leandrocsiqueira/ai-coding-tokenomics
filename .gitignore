@@ -3,3 +3,5 @@ __pycache__/
 *.pyc
 .ipynb_checkpoints/
 .vscode/
+
+/notebooks/01c_Inferencia/docs/TAREFA_01c_INVESTIGACAO_INFERENCIA.md

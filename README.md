@@ -170,6 +170,8 @@ After installing `requirements-dev.txt`, start `jupyter lab` from the repository
 | [Token Counts and Text Preprocessing](experiments/token_counts_and_preprocessing.ipynb) | Comparison of Qwen, SmolLM2, mBERT, and mT5 tokenizers across text formats and preprocessing conditions, including checks on text preservation. This notebook counts tokens without running model inference. |
 | [Inference Baseline Investigation — 01c](notebooks/03_estudo_inferencia_01c.ipynb) | Portuguese-language investigation of execution flow, generation settings, and measurement methodology, with an ongoing capacity and infrastructure-cost case study. |
 
+**Language convention:** The 01c inference study notebook and commit messages for changes specific to that study are written in Portuguese. This README and the other notebooks listed above are written in English.
+
 In the published 01c notebook, sections 1–3 have been developed, while sections 4–8 remain marked `TO-DO`. Its reference baseline is revision [`3a1be99`](https://github.com/leandrocsiqueira/ai-coding-tokenomics/tree/3a1be993041ed75f77f26f23b0cacf0aff507d30). The remaining activities cover model loading, interpretation of RAM and GPU memory, throughput and speedup calculations, result preservation and traceability, and the client case. The supporting [client case](notebooks/01c_Inferencia/docs/CASO_CLIENTE_INFRAESTRUTURA_01c.md) proposes measuring 24 synthetic samples and projecting the processing time and infrastructure cost for 10,000 clients; a final recommendation is still pending in the published notebook.
 
 

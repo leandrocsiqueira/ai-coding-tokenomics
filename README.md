@@ -16,7 +16,7 @@ The project is being developed step by step, with experiments designed to be rep
 
 ## 2. Environment
 
-The experiments were conducted using the hardware and operating system listed below. The Python package versions match the current environment snapshot saved in `environment-freeze.txt`.
+The hardware and system details below are recorded references from the project, rather than a live inventory of the current installation. The [NVIDIA-SMI snapshot](results/nvidia-smi.txt), dated September 22, 2026, records the GPU capacity, driver, and CUDA version reported by that tool. The other details are documented in the [environment notes](docs/findings.md#historical-environment-snapshot) and the inference study notebook. These records were collected at different times and do not establish the environment of every benchmark run.
 
 | Component        | Specification                    |
 | ---------------- | -------------------------------- |
@@ -26,24 +26,28 @@ The experiments were conducted using the hardware and operating system listed be
 | GPU              | NVIDIA RTX A3000 12GB Laptop GPU |
 | GPU memory       | 12 GiB (12,288 MiB)              |
 | NVIDIA driver    | 595.91.07                        |
-| CUDA version     | 13.2                             |
-| PyTorch          | 2.15.0+cu132                     |
-| Transformers     | 5.22.2                           |
+| CUDA reported by NVIDIA-SMI | 13.2                   |
 
 
-The project uses three files to manage and document its Python dependencies:
+### 2.1. Installation Requirements and Recorded Package Versions
 
-| File                     | Description                                                                                        |
-| ------------------------ | -------------------------------------------------------------------------------------------------- |
-| `requirements.txt`       | Lists the direct dependencies needed to run the project.                                           |
-| `requirements-dev.txt`   | Includes the project dependencies and additional tools used for notebook development.              |
-| `environment-freeze.txt` | Records all installed Python packages and their exact versions, including transitive dependencies. |
+The dependency files serve different purposes:
 
+| File | Purpose |
+| --- | --- |
+| [requirements.txt](requirements.txt) | Installation specification for the scripts: pinned PyTorch, Transformers, psutil, and Pandas, with an additional PyTorch CUDA package index. |
+| [requirements-dev.txt](requirements-dev.txt) | Includes the script requirements and pins JupyterLab, ipykernel, Matplotlib, and NumPy for notebook development. |
+| [environment-freeze.txt](environment-freeze.txt) | Preserved package snapshot, including transitive dependencies. It is a record of the environment when captured, not a live inventory or the installation specification used in section 3.1. |
 
-PyTorch can be installed separately by following the [official installation instructions](https://pytorch.org/get-started/locally/) and selecting a build compatible with the target CPU or CUDA setup.
+| Package | Installation requirements | Preserved package snapshot | October 9 benchmark record |
+| --- | --- | --- | --- |
+| PyTorch | `2.15.0+cu132` | `2.15.0` | `2.14.0+cu132` |
+| Transformers | `5.22.2` | `5.22.2` | `5.17.0` |
+| NumPy | `2.5.5` in development requirements | `2.5.4` | Not recorded in the benchmark CSV |
 
+The requirements and snapshot differ: NumPy has different pinned versions, and the snapshot omits the PyTorch `+cu132` build identifier. Use the requirements files for the documented installation; the preserved snapshot is a separate reference and does not imply an identical environment.
 
-**Note:** The current environment snapshot lists PyTorch 2.15.0+cu132 and Transformers 5.22.2, replacing the previously documented versions of 2.14.0+cu132 and 5.17.0, respectively. The freeze records PyTorch as torch==2.15.0, while the installed build reports the additional +cu132 identifier. This update doesn't mean that earlier benchmark results were reproduced using the newer versions.
+The October 9 versions come from the [historical benchmark CSV](https://github.com/leandrocsiqueira/ai-coding-tokenomics/blob/9d12a8b312d48bf5daa1c3ee05f157b670aae341/results/cpu_gpu_baseline.csv). Updating requirements does not demonstrate that those measurements were reproduced. The simple-baseline CSV does not record dependency versions, so the historical environment cannot be assigned to it from that file.
 
 
 ## 3. How to Run The Project
@@ -70,7 +74,7 @@ python -m pip install --upgrade pip
 
 ### 3.1. Installing Dependencies
 
-The project requires PyTorch 2.15.0 with CUDA 13.2 support, as specified in `requirements.txt`. This file also configures the [official CUDA 13.2 package index](https://download.pytorch.org/whl/cu132), where the pinned `torch==2.15.0+cu132` build is hosted. PyPI alone does not provide this CUDA-specific version, so the additional index is required to avoid a `No matching distribution found` error. No separate PyTorch installation is necessary.
+The installation specification pins `torch==2.15.0+cu132` in `requirements.txt`. This file also configures the [official CUDA 13.2 package index](https://download.pytorch.org/whl/cu132) for that build. Installing from the requirements therefore includes PyTorch; no separate installation is necessary for this setup.
 
 To run the Python scripts, install the project dependencies:
 
@@ -92,21 +96,13 @@ To start JupyterLab, run:
 jupyter lab
 ```
 
-The pinned CUDA-specific PyTorch build targets compatible NVIDIA GPU environments. CPU-only environments may require a different PyTorch distribution and a corresponding adjustment to the dependency specification.
+The pinned CUDA-specific PyTorch build targets compatible NVIDIA GPU environments. To use another PyTorch distribution, including a CPU-only build, adapt the dependency specification following the [official installation instructions](https://pytorch.org/get-started/locally/). Applying the unchanged requirements afterward would still require the pinned CUDA build.
 
 ### 3.2. Environment Snapshot
 
-The `environment-freeze.txt` file records the installed Python packages and their versions, including development tools and transitive dependencies.
+Use `environment-freeze.txt` to inspect the preserved package versions, including development tools and transitive dependencies. A fresh installation should follow section 3.1; the snapshot and requirements are not interchangeable, as shown in section 2.1.
 
-To install the recorded package versions on a compatible system, run:
-
-```bash
-python -m pip install -r environment-freeze.txt
-```
-
-This file provides a reference for the software environment and helps support reproducibility. However, it doesn't include details about the operating system, NVIDIA drivers, hardware, or all system-level dependencies.
-
-The snapshot also doesn't retain the `+cu132` PyTorch build identifier. To reproduce the CUDA environment, the corresponding PyTorch build must be obtained or verified separately.
+The snapshot does not include hardware, the operating system, NVIDIA drivers, or all system-level dependencies. Its `torch==2.15.0` entry also does not identify the `+cu132` build required by the installation specification. Reproducing a particular benchmark requires its own environment metadata, the appropriate package distribution and indexes, and compatible system dependencies. The snapshot alone does not establish reproducibility of the historical results.
 
 
 ### 3.3. Environment Validation

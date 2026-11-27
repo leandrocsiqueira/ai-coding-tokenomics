@@ -157,7 +157,7 @@ This experiment uses Qwen/Qwen2.5-0.5B-Instruct to compare CPU FP32 and, when CU
 
 The experiment records mean, median, and standard deviation of generation time, aggregate generated-token throughput, process RSS and PyTorch CUDA memory metrics, environment and protocol metadata, execution status, and the last generated response. Timings cover the complete `model.generate()` call, including prompt prefill and autoregressive decoding. Generated responses are retained for inspection; the experiment does not automatically evaluate response quality. Its protocol differs from the simple baseline described in section 4.3.
 
-**Results file — current implementation:** Both inference scripts write to `results/cpu_gpu_baseline.csv`. The extended experiment preserves existing records and adds new rows and columns as needed. The simple baseline replaces the CSV, so running it afterward removes the accumulated records from that file. Preserve a copy before running either experiment if the existing results need to be retained. Improving result preservation and traceability in the simple baseline is planned in section 7 of the ongoing 01c inference study.
+**Results file - current implementation:** Both inference scripts write to `results/cpu_gpu_baseline.csv`. The extended experiment preserves existing records and adds new rows and columns as needed. The simple baseline replaces the CSV, so running it afterward removes the accumulated records from that file. Preserve a copy before running either experiment if the existing results need to be retained. Improving result preservation and traceability in the simple baseline is planned in section 7 of the ongoing 01c inference study.
 
 ### 4.5. Study and Exploration Notebooks
 
@@ -168,7 +168,7 @@ After installing `requirements-dev.txt`, start `jupyter lab` from the repository
 | [Python and Pandas Review](notebooks/01_python_pandas_review.ipynb) | Python and Pandas fundamentals used in the project, memory units, DataFrame indexes, and CSV export/import. |
 | [Tokenizer Exploration](notebooks/02_tokenizer_exploration.ipynb) | Qwen tokenizer behavior, token IDs, internal token representations, decoding, offsets, and effects of input formatting. |
 | [Token Counts and Text Preprocessing](experiments/token_counts_and_preprocessing.ipynb) | Comparison of Qwen, SmolLM2, mBERT, and mT5 tokenizers across text formats and preprocessing conditions, including checks on text preservation. This notebook counts tokens without running model inference. |
-| [Inference Baseline Investigation — 01c](notebooks/03_estudo_inferencia_01c.ipynb) | Portuguese-language investigation of execution flow, generation settings, and measurement methodology, with an ongoing capacity and infrastructure-cost case study. |
+| [Inference Baseline Investigation - 01c](notebooks/03_estudo_inferencia_01c.ipynb) | Portuguese-language investigation of execution flow, generation settings, and measurement methodology, with an ongoing capacity and infrastructure-cost case study. |
 
 **Language convention:** The 01c inference study notebook and commit messages for changes specific to that study are written in Portuguese. This README and the other notebooks listed above are written in English.
 
@@ -177,19 +177,17 @@ In the published 01c notebook, sections 1–3 have been developed, while section
 
 ## 5. Experimental Results
 
-**Status: Pending Review**
+**Status: Exploratory results with documented provenance.**
 
-The project includes experimental results from tokenization and CPU/GPU inference benchmarks. However, these results and their associated analyses have not yet been fully reviewed against the corresponding script versions and execution methodologies.
+The project includes recorded tokenization and CPU/GPU inference measurements. Their sources, measurement protocols, observations, and limitations are documented in [`docs/findings.md`](docs/findings.md). The summaries below describe the available records; they do not establish general conclusions across models, workloads, or hardware.
 
-Once the experimental records have been verified, this section will consolidate the quantitative comparisons, observations, and conclusions.
-
-Existing results are available in the [`results/`](results/) directory. Additional findings are documented in [`docs/findings.md`](docs/findings.md) and should be considered preliminary until reviewed.
+The [`results/`](results/) directory contains the tokenizer comparison and simple-baseline CSVs. The October 9 inference record is preserved in the historical revision linked below. These records do not demonstrate that the measurements have been reproduced with the current dependency versions.
 
 ### 5.1. Inference Protocols and Result Provenance
 
 The inference records represent two protocols using Qwen/Qwen2.5-0.5B-Instruct:
 
-| Aspect | Simple baseline | Historical experiment — October 9, 2026 |
+| Aspect | Simple baseline | Historical experiment - October 9, 2026 |
 | --- | --- | --- |
 | Prompt format | Direct tokenization | System-and-user chat template |
 | Recorded input tokens | 13 | 44 |
@@ -199,13 +197,21 @@ The inference records represent two protocols using Qwen/Qwen2.5-0.5B-Instruct:
 | Process isolation | Configurations share one process | Separate subprocess per configuration |
 | CPU FP32 throughput (tokens/s) | 17.91 | 21.40 |
 | CUDA FP32 throughput (tokens/s) | 28.20 | 46.15 |
-| CUDA FP32 / CPU FP32 throughput ratio | Approximately **1.57×** | Approximately **2.16×** |
+| CUDA FP32 / CPU FP32 throughput ratio | Approximately **1.57x** | Approximately **2.16x** |
 
 The simple-baseline figures come from the [CSV in the current tree](results/cpu_gpu_baseline.csv). The October 9 figures come from the [historical CSV at revision `9d12a8b`](https://github.com/leandrocsiqueira/ai-coding-tokenomics/blob/9d12a8b312d48bf5daa1c3ee05f157b670aae341/results/cpu_gpu_baseline.csv). The expanded implementation is maintained in `experiments/cpu_gpu_complete_test.py`; the historical figures do not represent a new execution of that script with the current dependencies.
 
-Each ratio compares CUDA FP32 with CPU FP32 within its own protocol, using the recorded throughput values before rounding. The difference between 1.57× and 2.16× does not establish a performance improvement between benchmark versions: prompt format, generation limits, repetition count, and process isolation changed. Throughput covers the complete measured `model.generate()` call, including prompt prefill and autoregressive decoding.
+Each ratio compares CUDA FP32 with CPU FP32 within its own protocol, using the recorded throughput values before rounding. The difference between 1.57x and 2.16x does not establish a performance improvement between benchmark versions: prompt format, generation limits, repetition count, and process isolation changed. Throughput covers the complete measured `model.generate()` call, including prompt prefill and autoregressive decoding.
 
 These are exploratory results: the simple baseline contains one measured generation per configuration, and the historical record contains one benchmark session with five measured generations per configuration. See the [result provenance and limitations](docs/findings.md#result-provenance) for the detailed analysis.
+
+### 5.2. Selected Findings and Limits
+
+- **Tokenizer comparison:** Across the five inputs in the [comparison CSV](results/tokenizer_comparison.csv), Qwen produced 36 token IDs and SmolLM2 produced 48. This observation applies to these inputs and tokenizers; it does not establish a universal efficiency ranking or the cost of a billed API request.
+- **Numerical precision:** In the October 9 experiment, CUDA FP16 reduced peak memory allocated by the PyTorch CUDA allocator by approximately 49% relative to CUDA FP32. Throughput was 45.69 tokens/s for FP16 and 46.15 tokens/s for FP32, so this execution did not demonstrate a meaningful speed advantage from FP16. The memory metric does not represent total device VRAM usage.
+- **Response quality:** The inference experiments measure performance and memory without a dedicated evaluation of correctness or response quality. Those aspects remain to be evaluated before drawing conclusions about practical output quality.
+
+The [detailed findings](docs/findings.md) distinguish observations from hypotheses and identify further measurements needed to test their reliability, including independent benchmark sessions and additional workloads.
 
 
 ## 6. Roadmap
@@ -224,6 +230,6 @@ Future experiments will focus on improving measurement reliability, evaluating a
 
 ## 7. Project Status
 
-**Current stage:** Initial tokenization and CPU/GPU inference experiments implemented, with experimental results pending review and consolidation.
+**Current stage:** Tokenization and CPU/GPU inference experiments implemented, with exploratory measurements, documented provenance and limitations, and an ongoing inference study covering capacity and infrastructure cost.
 
 The repository remains under active development. Existing findings reflect the experimental conditions and available measurements and may be refined as the methodology evolves.
